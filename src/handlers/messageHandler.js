@@ -4,6 +4,14 @@ const { sendResetOtp } = require("../services/resetService");
 
 const resetSessions = new Map();
 
+function getStartPayload(text) {
+  if (!text.startsWith("/start")) {
+    return "";
+  }
+
+  return text.replace("/start", "").trim().toLowerCase();
+}
+
 async function handleMessage(message) {
   const chatId = message.chat?.id;
 
@@ -13,13 +21,25 @@ async function handleMessage(message) {
 
   if (!text) return;
 
-  if (text === "/start") {
+  const payload = getStartPayload(text);
+
+  // Signup
+  if (
+    text === "/start" ||
+    payload === "signup"
+  ) {
     resetSessions.delete(chatId);
+
     await sendSignupOtp(message);
+
     return;
   }
 
-  if (text === "/reset") {
+  // Reset via deep link
+  if (
+    payload === "reset" ||
+    text === "/reset"
+  ) {
     resetSessions.set(chatId, true);
 
     await sendMessage(
@@ -30,6 +50,7 @@ async function handleMessage(message) {
     return;
   }
 
+  // Waiting for username
   if (resetSessions.has(chatId)) {
     resetSessions.delete(chatId);
 
@@ -40,7 +61,7 @@ async function handleMessage(message) {
 
   await sendMessage(
     chatId,
-    "Use /start for Signup OTP\nUse /reset for Password Reset OTP"
+    "Welcome to Viltrum.\n\nChoose one:\n\n/start - Signup OTP\n/reset - Password Reset OTP"
   );
 }
 
